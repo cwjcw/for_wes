@@ -1,0 +1,16 @@
+{
+  "start_url": "https://example.com",
+  "link_items_selector": "#sidebar a.export-link",
+  "export_button": {
+    "by": "css",
+    "value": "button.download-data"
+  },
+  "headless": false,
+  "wait_after_link_seconds": 10,
+  "export_click_timeout_seconds": 45,
+  "download_wait_timeout_seconds": 120,
+  "download_directory": "downloads",
+  "page_ready_timeout": 30,
+  "page_load_timeout_seconds": 60,
+  "navigate_back_after_export": false
+}
