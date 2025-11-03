@@ -12,5 +12,11 @@
   "download_directory": "downloads",
   "page_ready_timeout": 30,
   "page_load_timeout_seconds": 60,
-  "navigate_back_after_export": false
+  "navigate_back_after_export": false,
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "chrome_binary_path": "",
+  "request_headers": {
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Cache-Control": "no-cache"
+  }
 }

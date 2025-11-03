@@ -28,6 +28,22 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 CONFIG_FILENAME = "automation_config.json"
 DEFAULT_TIMEOUT = 30
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
+DEFAULT_REQUEST_HEADERS = {
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,image/apng,*/*;q=0.8,"
+        "application/signed-exchange;v=b3;q=0.7"
+    ),
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 
 def main() -> None:
@@ -125,6 +141,12 @@ def build_driver(config: Dict) -> Tuple[webdriver.Chrome, Path]:
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    user_agent = config.get("user_agent", DEFAULT_USER_AGENT)
+    if user_agent:
+        options.add_argument(f"--user-agent={user_agent}")
+    binary_path = config.get("chrome_binary_path")
+    if binary_path:
+        options.binary_location = binary_path
 
     prefs = {
         "download.default_directory": str(download_dir_path),
@@ -138,6 +160,8 @@ def build_driver(config: Dict) -> Tuple[webdriver.Chrome, Path]:
         service=ChromeService(ChromeDriverManager().install()),
         options=options,
     )
+
+    setup_request_headers(driver, config, user_agent)
 
     page_timeout = config.get("page_load_timeout_seconds")
     if page_timeout:
@@ -265,6 +289,24 @@ def resolve_working_path(relative_path: str) -> Path:
         else Path(__file__).resolve().parent
     )
     return (base / relative_path).resolve()
+
+
+def setup_request_headers(driver: webdriver.Chrome, config: Dict, user_agent: Optional[str]) -> None:
+    """Register standard request headers via Chrome DevTools Protocol."""
+    headers = dict(DEFAULT_REQUEST_HEADERS)
+    if user_agent:
+        headers["User-Agent"] = user_agent
+
+    extra_headers = config.get("request_headers")
+    if isinstance(extra_headers, dict):
+        headers.update({str(k): str(v) for k, v in extra_headers.items() if v is not None})
+
+    try:
+        driver.execute_cdp_cmd("Network.enable", {})
+        driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": headers})
+        print("[DEBUG] Applied custom HTTP headers to browser session.")
+    except WebDriverException as exc:
+        print(f"[WARN] Failed to configure extra HTTP headers: {exc}")
 
 
 if __name__ == "__main__":
