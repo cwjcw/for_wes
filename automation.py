@@ -12,7 +12,7 @@ import sys
 import time
 from contextlib import suppress
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 from selenium import webdriver
 from selenium.common.exceptions import JavascriptException, TimeoutException, WebDriverException
@@ -64,6 +64,7 @@ def run_automation(driver: webdriver.Chrome, download_dir: Path, config: Dict) -
     start_url: str = config["start_url"]
     link_selector: str = config["link_items_selector"]
     export_button_config: Dict = config["export_button"]
+    target_texts = normalize_target_texts(config.get("link_text_targets"))
 
     print(f"[INFO] Opening start URL: {start_url}")
     driver.get(start_url)
@@ -83,7 +84,7 @@ def run_automation(driver: webdriver.Chrome, download_dir: Path, config: Dict) -
         print(f"[DEBUG] Iteration {iteration}: scanning for remaining links.")
         link_elements = collect_link_elements(driver, link_selector)
 
-        next_item = pick_next_link(link_elements, visited_labels)
+        next_item = pick_next_link(link_elements, visited_labels, target_texts)
         if next_item is None:
             print("[INFO] No more links to process. Automation complete.")
             break
@@ -190,16 +191,32 @@ def collect_link_elements(driver: webdriver.Chrome, selector: str) -> Iterable[W
 def pick_next_link(
     candidates: Iterable[WebElement],
     visited_labels: set,
+    target_texts: Optional[Sequence[str]] = None,
 ) -> Optional[Tuple[WebElement, str]]:
+    available: list[Tuple[WebElement, str]] = []
     for element in candidates:
         try:
             label = extract_label(element)
         except StaleElementReferenceException:
             continue
 
+        available.append((element, label))
+
+    if not available:
+        return None
+
+    if target_texts:
+        for target in target_texts:
+            if target in visited_labels:
+                continue
+            for element, label in available:
+                if label == target:
+                    return element, label
+        return None
+
+    for element, label in available:
         if label in visited_labels:
             continue
-
         return element, label
 
     return None
@@ -307,6 +324,13 @@ def setup_request_headers(driver: webdriver.Chrome, config: Dict, user_agent: Op
         print("[DEBUG] Applied custom HTTP headers to browser session.")
     except WebDriverException as exc:
         print(f"[WARN] Failed to configure extra HTTP headers: {exc}")
+
+
+def normalize_target_texts(raw: Optional[Sequence]) -> Optional[list[str]]:
+    if not raw:
+        return None
+    cleaned = [str(item).strip() for item in raw if str(item).strip()]
+    return cleaned or None
 
 
 if __name__ == "__main__":

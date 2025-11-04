@@ -12,14 +12,28 @@
 
 ## 环境准备
 - 安装 Python 3.10 或更新版本；
-- 建议创建虚拟环境：`python -m venv .venv`，随后 `source .venv/bin/activate`（Windows 使用 `.venv\Scripts\activate`）；
+- 建议创建虚拟环境：`python -m venv .venv`，随后激活虚拟环境 Linux使用`source .venv/bin/activate`（Windows 使用 `.venv\Scripts\activate`）；
 - 安装依赖：`pip install -r requirements.txt`；
 - 确保本机安装了 Chrome 浏览器，脚本会自动下载匹配版本的 `chromedriver`。
 
 ## 配置文件
 首次使用请复制根目录下的 `automation_config.example.json` 为 `automation_config.json`，然后按实际情况修改：
 - `start_url`：自动化开始访问的页面地址（通常为登录后的入口页）；
-- `link_items_selector`：左侧链接列表的 CSS 选择器，脚本会依据该选择器收集所有链接；可在浏览器按 `F12` 打开开发者工具，选中任一左侧链接后复制或手动编写选择器，并在控制台通过 `document.querySelectorAll('选择器')` 检查能否覆盖全部目标链接。
+- `link_items_selector`：左侧链接列表的 CSS 选择器，脚本会依据该选择器收集所有链接。使用步骤：  
+  1. 打开目标网页并按 `F12` 调出开发者工具；  
+  2. 使用“选择元素”工具点击任意一个左侧目录链接；  
+  3. 观察其 `class`、`id` 或父容器结构，写出能覆盖所有目标链接的 CSS 选择器（示例：`#sidebar a.menu-link`、`.nav-tree li > a`）；  
+  4. 在浏览器控制台执行 `document.querySelectorAll('选择器')`，确认返回数量与实际链接一致；  
+  5. 将该选择器字符串填入配置文件。没有可视化列表可供勾选，需要手动写选择器。
+- `link_text_targets`：可选数组，按顺序列出需要点击的链接文本；如果提供，脚本只会按照这些文本顺序寻找并点击对应链接（文本需与页面显示完全一致）。示例：
+  ```json
+  "link_text_targets": [
+    "五月报表",
+    "六月报表",
+    "年度汇总"
+  ]
+  ```
+  若留空，脚本默认对 `link_items_selector` 匹配到的所有链接按扫描顺序依次处理。
 - `export_button.by` / `export_button.value`：导出按钮的定位方式与值，可选 `css`、`xpath`、`id`、`name` 等；同样在开发者工具中检查导出按钮标签，复制稳定的选择器或 XPath，尽量使用固定的 `id`、`data-*` 属性等不易变的特征。
 - `wait_after_link_seconds`：点击链接后等待内容加载的时间，默认 10 秒，可根据页面速度调整；
 - `download_directory`：导出文件保存目录，默认是脚本目录下的 `downloads` 文件夹；
@@ -36,7 +50,7 @@
 2. （可选）先登录目标网站，以便脚本启动后保持登录状态；
 3. 执行 `python automation.py`；
 4. 若页面需要验证码或二次认证，可在脚本打开的浏览器窗口中手动完成，然后继续等待脚本运行；
-5. 脚本会依次处理所有链接，期间会在终端打印进度信息；
+5. 脚本会依照 `link_text_targets`（若配置）或页面扫描顺序处理链接，期间会在终端打印进度信息；
 6. 全部链接完成后，浏览器自动关闭，程序退出。
 
 导出的文件默认保存在 `downloads` 文件夹，建议定期清理旧数据以便区分最新导出结果。脚本会通过 Chrome DevTools 协议注入标准请求头，以减少被反爬机制识别的风险；如需特殊头部可在配置中追加。

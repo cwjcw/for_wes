@@ -1,6 +1,10 @@
 {
   "start_url": "https://example.com",
   "link_items_selector": "#sidebar a.export-link",
+  "link_text_targets": [
+    "报表一",
+    "报表二"
+  ],
   "export_button": {
     "by": "css",
     "value": "button.download-data"
